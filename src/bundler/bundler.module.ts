@@ -1,14 +1,15 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { BundlerController } from './bundler.controller';
 import { BundlerService } from './bundler.service';
 import { TransactionModule } from 'src/transaction/transaction.module';
 import { QueueModule } from 'src/queue/queue.module';
 import { ConfigModule } from '@nestjs/config';
-import { Client } from 'src/queue/rabbitMqClient/client';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Transaction, TransactionSchema } from 'src/models/transaction.model';
 
 @Module({
-  imports: [TransactionModule,QueueModule,ConfigModule],
+  imports: [forwardRef(() => QueueModule), ConfigModule, forwardRef(() => TransactionModule), MongooseModule.forFeature([{ name: Transaction.name, schema: TransactionSchema }])], 
   controllers: [BundlerController],
-  providers: [BundlerService]
+  providers: [BundlerService],
 })
 export class BundlerModule {}

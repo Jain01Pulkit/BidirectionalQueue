@@ -1,61 +1,90 @@
 import { Injectable } from '@nestjs/common';
 
+type Input = {
+  stringsInstructions: string[];
+  signedDto: string;
+  method: string;
+  _id: string;
+};
+
+type BundleOutput = {
+  signedInstructions: string[];
+  dtos: { signedDto: string, method: string }[];
+};
+
 @Injectable()
 export class BundlerService {
-  private find(s: string, parent: Map<string, string>): string {
-    if (parent.get(s) !== s) {
-      parent.set(s, this.find(parent.get(s)!, parent)); // Path compression
+
+  private find(i: number, parent: number[]): number {
+    if (parent[i] !== i) {
+      parent[i] = this.find(parent[i], parent);
     }
-    return parent.get(s)!;
+    return parent[i];
   }
 
-  private union(a: string, b: string, parent: Map<string, string>, rank: Map<string, number>): void {
-    const rootA = this.find(a, parent);
-    const rootB = this.find(b, parent);
-
-    if (rootA !== rootB) {
-      const rankA = rank.get(rootA) || 0;
-      const rankB = rank.get(rootB) || 0;
-
-      if (rankA > rankB) {
-        parent.set(rootB, rootA);
-      } else if (rankA < rankB) {
-        parent.set(rootA, rootB);
+  private union(i: number, j: number, parent: number[], rank: number[]): void {
+    const rootI = this.find(i, parent);
+    const rootJ = this.find(j, parent);
+    if (rootI !== rootJ) {
+      if (rank[rootI] > rank[rootJ]) {
+        parent[rootJ] = rootI;
+      } else if (rank[rootI] < rank[rootJ]) {
+        parent[rootI] = rootJ;
       } else {
-        parent.set(rootB, rootA);
-        rank.set(rootA, rankA + 1);
+        parent[rootJ] = rootI;
+        rank[rootI]++;
       }
     }
   }
 
-  generateBundle(input: string[]): string[][] {
-    const parent = new Map<string, string>();
-    const rank = new Map<string, number>();
-    const charToString = new Map<string, string>();
+  generateBundle(inputs: Input[]): BundleOutput[] {
+    const n = inputs.length;
+    const parent = Array.from({ length: n }, (_, i) => i);
+    const rank = Array(n).fill(0);
 
-    for (const str of input) {
-      parent.set(str, str);
-      rank.set(str, 1);
-    }
+    const stringToIndices = new Map<string, number[]>();
 
-    for (const str of input) {
-      for (const char of str) {
-        if (charToString.has(char)) {
-          this.union(str, charToString.get(char)!, parent, rank);
-        } else {
-          charToString.set(char, str);
+    inputs.forEach((input, i) => {
+      for (const str of input.stringsInstructions) {
+        if (!stringToIndices.has(str)) {
+          stringToIndices.set(str, []);
         }
+        stringToIndices.get(str)!.push(i);
+      }
+    });
+
+    for (const indices of stringToIndices.values()) {
+      for (let i = 1; i < indices.length; i++) {
+        this.union(indices[0], indices[i], parent, rank);
       }
     }
-    const groups = new Map<string, string[]>();
-    for (const str of input) {
-      const root = this.find(str, parent);
+
+    const groups = new Map<number, Input[]>();
+    for (let i = 0; i < n; i++) {
+      const root = this.find(i, parent);
       if (!groups.has(root)) {
         groups.set(root, []);
       }
-      groups.get(root)!.push(str);
+      groups.get(root)!.push(inputs[i]);
     }
 
-    return Array.from(groups.values());
+    const bundles: BundleOutput[] = [];
+    for (const group of groups.values()) {
+      const allInstructions = new Set<string>();
+      const dtoList: { signedDto: string; method: string, uniqueId: string }[] = [];
+
+      for (const input of group) {
+        input.stringsInstructions.forEach(str => allInstructions.add(str));
+        dtoList.push({ signedDto: input.signedDto, method: input.method, uniqueId: input._id.toString() });
+      }
+
+      bundles.push({
+        signedInstructions: Array.from(allInstructions),
+        dtos: dtoList,
+      });
+    }
+
+    return bundles;
   }
+
 }

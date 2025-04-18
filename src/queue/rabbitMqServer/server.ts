@@ -5,6 +5,8 @@ import { Channel } from 'amqplib';
 import { v4 as uuidv4 } from 'uuid'; // For correlation IDs
 import { ProducerServiceServer } from './producer.service';
 import { ConsumerServiceServer } from './consumer.service';
+import { BundlerService } from 'src/bundler/bundler.service';
+import { TransactionService } from 'src/transaction/transaction.service';
 
 @Injectable()
 export class Server implements OnModuleInit {
@@ -15,14 +17,12 @@ export class Server implements OnModuleInit {
     private producer:ProducerServiceServer;
     private consumer:ConsumerServiceServer;
 
-        constructor() {
-        const connection: IAmqpConnectionManager = amqp.connect(["amqp://guest:guest@127.0.0.1"]);
-        // connection.createChannel({
-        //     setup: async (channel: Channel) => {
-        //         await channel.assertQueue("transactionBundle", { durable: true });       /// TODO: add queue name from config
-        //     }      
-        // })
-    }
+    constructor(
+        private bundleTransaction: BundlerService,
+        private transactionService: TransactionService
+    ) {}
+
+
     async onModuleInit() {
         try {
             await this.inititalize('transactionBundle');
@@ -30,6 +30,7 @@ export class Server implements OnModuleInit {
             console.log(error, 'RabbitMQ Server Initialization');
         }
     }
+
     async inititalize(queueName:string) {
         if (this.isInitialized) {
             return;
@@ -39,12 +40,10 @@ export class Server implements OnModuleInit {
             this.producerChannel = await this.connection.createChannel();
             this.consumerChannel = await this.connection.createChannel();
 
-            const { queue: replyQueueName } = await this.consumerChannel.assertQueue(queueName, { exclusive: true,durable:false });
-console.log(replyQueueName, 'replyQueueName');
+            const { queue: replyQueueName } = await this.consumerChannel.assertQueue(queueName, { exclusive: true, durable: false });
             this.producer = new ProducerServiceServer(this.producerChannel);
-            this.consumer = new ConsumerServiceServer(this.consumerChannel, replyQueueName,this.producer);
+            this.consumer = new ConsumerServiceServer(this.consumerChannel, replyQueueName,this.producer,this.bundleTransaction,this.transactionService);
             this.consumer.consumeMessage();
-
             this.isInitialized = true;
         } catch (error:any) {
             console.log(error, 'RabbitMQ Initialize');

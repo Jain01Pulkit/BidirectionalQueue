@@ -10,27 +10,20 @@ import { IAmqpConnectionManager } from 'amqp-connection-manager/dist/types/AmqpC
 
 @Injectable()
 export class Client implements OnModuleInit {
-    private isInitialized:boolean = false;
-    private connection:IAmqpConnectionManager;
-    private producerChannel:ChannelWrapper;
-    private consumerChannel:ChannelWrapper;
-    private eventEmitter:EventEmitter;
-    private producer:ProducerService;
-    private consumer:ConsumerService;
+    private isInitialized: boolean = false;
+    private connection: IAmqpConnectionManager;
+    private producerChannel: ChannelWrapper;
+    private consumerChannel: ChannelWrapper;
+    private eventEmitter: EventEmitter;
+    private producer: ProducerService;
+    private consumer: ConsumerService;
 
-        constructor() {
-        // const connection: IAmqpConnectionManager = amqp.connect(["amqp://guest:guest@127.0.0.1"]);
-        // connection.createChannel({
-        //     setup: async (channel: Channel) => {
-        //         await channel.assertQueue("transactionBundle", { durable: true });       /// TODO: add queue name from config
-        //     }      
-        // })
-    }
+    constructor() { }
 
     async onModuleInit() {
         try {
             await this.inititalize();
-        } catch (error:any) {       
+        } catch (error: any) {
             Logger.error(error, 'RabbitMQ Client Initialization');
         }
     };
@@ -42,25 +35,24 @@ export class Client implements OnModuleInit {
             this.connection = await amqp.connect(["amqp://guest:guest@127.0.0.1"]);
             this.producerChannel = await this.connection.createChannel();
             this.consumerChannel = await this.connection.createChannel();
-            
+
             const { queue: replyQueueName } = await this.consumerChannel.assertQueue('transactionBundle', { exclusive: true });
 
             this.eventEmitter = new EventEmitter();
             this.eventEmitter.setMaxListeners(0);
-            this.producer = new ProducerService(this.producerChannel, replyQueueName,this.eventEmitter);
-            this.consumer = new ConsumerService(this.consumerChannel, replyQueueName,this.eventEmitter);
+            this.producer = new ProducerService(this.producerChannel, replyQueueName, this.eventEmitter);
+            this.consumer = new ConsumerService(this.consumerChannel, replyQueueName, this.eventEmitter);
             this.consumer.consumeMessage();
 
             this.isInitialized = true;
-        } catch (error:any) {
+        } catch (error: any) {
             console.log(error, 'RabbitMQ Initialize');
             throw Error(error);
         }
     }
 
-    public async produce(data:any, queueName:string, corelationId?:string) {
+    public async produce(data: any, queueName: string, corelationId?: string) {
         try {
-            console.log(this.isInitialized, 'isInitialized');
             if (!this.isInitialized) {
                 await this.inititalize();
             }
@@ -70,20 +62,19 @@ export class Client implements OnModuleInit {
                 uuid = uuidv4();
             }
 
-            const queueResponse =  await this.producer.sendQueue(data, queueName, uuid);
+            const queueResponse = await this.producer.sendQueue(queueName, data, uuid);
             if (!queueResponse || queueResponse.error) {
                 return {
                     message: 'Something Went Wrong!',
                     error: true,
                 };
             }
-            console.log('queueResponse', queueResponse);
             return {
                 data: queueResponse,
                 message: 'Nice',
                 error: false,
             };
-        } catch (error:any) {
+        } catch (error: any) {
             console.log(error, 'RabbitMQ Producer');
             throw Error(error);
         }

@@ -7,6 +7,6 @@ export class TransactionController {
 
   @Post('process')
   async processTransactions(@Body() body: { data: string[][] }) {
-    return this.transactionService.processInBatches(body.data);
+    // return this.transactionService.processInBatches(body.data);
   }
 }

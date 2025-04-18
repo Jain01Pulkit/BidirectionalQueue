@@ -2,36 +2,30 @@ import { Inject, Injectable } from '@nestjs/common';
 import client from '../rabbitMqClient/client';
 import { ChannelWrapper } from 'amqp-connection-manager';
 import { ProducerServiceServer } from './producer.service';
+import { BundlerService } from 'src/bundler/bundler.service';
+import { TransactionService } from 'src/transaction/transaction.service';
 
 const MAX_RETRIES = 5;
 @Injectable()
 export class ConsumerServiceServer {
     constructor(
-        @Inject('CHANNEL_WRAPPER') private channelWrapper:ChannelWrapper, @Inject('QUEUE_NAME') private queueName:string,
-        private producer:ProducerServiceServer,
-    ){}
+        @Inject('CHANNEL_WRAPPER') private channelWrapper: ChannelWrapper,
+        @Inject('QUEUE_NAME') private queueName: string,
+        private producer: ProducerServiceServer,
+        private bundleTransaction: BundlerService,
+        private transactionService: TransactionService
+    ) { }
 
-    /**
-     * @param {string} queueName 
-     * @param {any} data 
-     * @returns {Promise<PromiseResolve>}
-     * @memberof ProducerService
-     * @description: Function to send data to the specified queue
-     */
     async consumeMessage(): Promise<any> {
         try {
-            this.channelWrapper.consume(this.queueName, (message:any) => {
-                console.log("consimong");
+            this.channelWrapper.consume(this.queueName, async (message: any) => {
                 const { correlationId, replyTo } = message.properties;
                 if (!correlationId || !replyTo) {
-                    throw Error('Some Prorperties are missing');
+                    throw Error('Some Properties are missing');
                 }
-                const data = JSON.parse(message.content.toString());
-                console.log('the reply message is ', data);
-
-                // const clientINstance = new client();
-                // clientINstance.produce(data, replyTo, correlationId);
-                this.producer.sendQueueServer(replyTo, data, correlationId);
+                const bundledTransactions = this.bundleTransaction.generateBundle(JSON.parse(message.content.toString()));
+                const batcheResponse = await this.transactionService.processInBatches(bundledTransactions);
+                this.producer.sendQueueServer(replyTo, batcheResponse, correlationId);
             }, {
                 noAck: true,
             });

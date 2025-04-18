@@ -8,9 +8,13 @@ import { ConsumerServiceServer } from './rabbitMqServer/consumer.service';
 import EventEmitter from 'events';
 import Server from './rabbitMqServer/server';
 import { ProducerServiceServer } from './rabbitMqServer/producer.service';
+import { BundlerModule } from 'src/bundler/bundler.module';
+import { TransactionModule } from 'src/transaction/transaction.module';
+import { BundlerService } from 'src/bundler/bundler.service';
+import { TransactionService } from 'src/transaction/transaction.service';
 
 @Module({
-    imports: [ConfigModule],
+    imports: [ConfigModule,BundlerModule, TransactionModule],
     providers: [
         ProducerService,
         ProducerServiceServer,
@@ -18,6 +22,8 @@ import { ProducerServiceServer } from './rabbitMqServer/producer.service';
         ConsumerServiceServer,
         Client,
         Server,
+        BundlerService,
+        TransactionService,
         {
             provide: 'QUEUE_NAME',
             useValue: ['amqp://guest:guest@127.0.0.1'],

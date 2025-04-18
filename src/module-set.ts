@@ -6,6 +6,7 @@ import { QueueModule } from './queue/queue.module';
 import loggerConfig from './logger-factory';
 import appConfig from './config/app.config';
 import { BundlerModule } from './bundler/bundler.module';
+import { MongooseModule } from '@nestjs/mongoose';
 
 export default function generateModuleSet() {
     const imports: ModuleMetadata['imports'] = [
@@ -20,7 +21,7 @@ export default function generateModuleSet() {
         useFactory: loggerConfig,
       }),
       QueueModule,
-      BundlerModule
+      BundlerModule, MongooseModule.forRoot('mongodb://localhost:27017/test')
     ];
     return imports;
 }
