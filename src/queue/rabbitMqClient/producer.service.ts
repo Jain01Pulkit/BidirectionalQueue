@@ -34,10 +34,6 @@ export class ProducerService {
                 this.eventEmitter.once(correlationId as any, (msg: any) => {
                     const reply = JSON.parse(msg.content.toString());
                     if (!reply) reject(new Error('Empty reply'));
-                    const userResult = reply.find((res: any) => res.uniqueId === data.uniqueId);
-                    console.log(userResult, 'userResult');
-                    console.log(data, 'data');
-                    console.log(reply, 'reply');
                     resolve(reply);
                 });
             })

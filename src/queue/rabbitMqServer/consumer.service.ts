@@ -26,8 +26,9 @@ export class ConsumerServiceServer {
                 const bundledTransactions = this.bundleTransaction.generateBundle(JSON.parse(message.content.toString()));
                 const batcheResponse = await this.transactionService.processInBatches(bundledTransactions);
                 this.producer.sendQueueServer(replyTo, batcheResponse, correlationId);
+                this.channelWrapper.ack(message);
             }, {
-                noAck: true,
+                noAck: false,
             });
         } catch (error) {
             console.log(error, 'Consumer Server consumeMessage');

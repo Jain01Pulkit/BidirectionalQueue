@@ -22,9 +22,10 @@ export class ConsumerService {
         try {
             this?.eventEmitter?.setMaxListeners(0);
             this.channelWrapper.consume(this.queueName, (message: any) => {
-                this?.eventEmitter?.emit(message.properties.correlationId.toString(), message);
+                this.eventEmitter.emit(message.properties.correlationId.toString(), message);
+                this.channelWrapper.ack(message);
             }, {
-                noAck: true,
+                noAck: false,
             });
         } catch (error) {
             console.log(error, 'Consumer Client consumeMessage');

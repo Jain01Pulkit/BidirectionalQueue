@@ -4,7 +4,7 @@ type Input = {
   stringsInstructions: string[];
   signedDto: string;
   method: string;
-  _id: string;
+  uniqueId: string;
 };
 
 type BundleOutput = {
@@ -75,7 +75,7 @@ export class BundlerService {
 
       for (const input of group) {
         input.stringsInstructions.forEach(str => allInstructions.add(str));
-        dtoList.push({ signedDto: input.signedDto, method: input.method, uniqueId: input._id.toString() });
+        dtoList.push({ signedDto: input.signedDto, method: input.method, uniqueId: input.uniqueId });
       }
 
       bundles.push({
