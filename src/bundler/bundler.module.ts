@@ -8,7 +8,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Transaction, TransactionSchema } from 'src/models/transaction.model';
 
 @Module({
-  imports: [forwardRef(() => QueueModule), ConfigModule, forwardRef(() => TransactionModule), MongooseModule.forFeature([{ name: Transaction.name, schema: TransactionSchema }])], 
+  imports: [
+    forwardRef(() => QueueModule),
+    ConfigModule,
+    forwardRef(() => TransactionModule),
+    MongooseModule.forFeature([
+      { name: Transaction.name, schema: TransactionSchema },
+    ]),
+  ],
   controllers: [BundlerController],
   providers: [BundlerService],
 })

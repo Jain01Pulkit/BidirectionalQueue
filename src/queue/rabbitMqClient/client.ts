@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import amqp, { ChannelWrapper } from 'amqp-connection-manager';
 import { Channel } from 'amqplib';
-import { v4 as uuidv4 } from 'uuid'; // For correlation IDs
+import { v4 as uuidv4 } from 'uuid';
 import { EventEmitter } from 'events';
 import { ProducerService } from './producer.service';
 import { ConsumerService } from './consumer.service';
@@ -71,7 +71,7 @@ export class Client implements OnModuleInit {
             }
             return {
                 data: queueResponse,
-                message: 'Nice',
+                message: 'Transactions Completed',
                 error: false,
             };
         } catch (error: any) {

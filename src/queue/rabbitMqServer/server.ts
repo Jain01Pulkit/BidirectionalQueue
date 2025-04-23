@@ -43,7 +43,7 @@ export class Server implements OnModuleInit {
             const { queue: replyQueueName } = await this.consumerChannel.assertQueue(queueName, { exclusive: true, durable: false });
             this.producer = new ProducerServiceServer(this.producerChannel);
             this.consumer = new ConsumerServiceServer(this.consumerChannel, replyQueueName,this.producer,this.bundleTransaction,this.transactionService);
-            this.consumer.consumeMessage();
+            await this.consumer.consumeMessage();
             this.isInitialized = true;
         } catch (error:any) {
             console.log(error, 'RabbitMQ Initialize');

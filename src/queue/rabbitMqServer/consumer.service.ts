@@ -18,14 +18,14 @@ export class ConsumerServiceServer {
 
     async consumeMessage(): Promise<any> {
         try {
-            this.channelWrapper.consume(this.queueName, async (message: any) => {
+            await this.channelWrapper.consume(this.queueName, async (message: any) => {
                 const { correlationId, replyTo } = message.properties;
                 if (!correlationId || !replyTo) {
                     throw Error('Some Properties are missing');
                 }
                 const bundledTransactions = this.bundleTransaction.generateBundle(JSON.parse(message.content.toString()));
                 const batcheResponse = await this.transactionService.processInBatches(bundledTransactions);
-                this.producer.sendQueueServer(replyTo, batcheResponse, correlationId);
+                await this.producer.sendQueueServer(replyTo, batcheResponse, correlationId);
                 this.channelWrapper.ack(message);
             }, {
                 noAck: false,

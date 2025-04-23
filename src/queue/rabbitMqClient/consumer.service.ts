@@ -5,6 +5,7 @@ import EventEmitter from 'events';
 const MAX_RETRIES = 5;
 @Injectable()
 export class ConsumerService {
+    private isConsuming: boolean = false;
     constructor(
         @Inject('CHANNEL_WRAPPER') private channelWrapper: ChannelWrapper,
         @Inject('QUEUE_NAME') private queueName: string,
@@ -20,8 +21,11 @@ export class ConsumerService {
      */
     async consumeMessage() {
         try {
+            if (this.isConsuming) {
+                return;
+            }
             this?.eventEmitter?.setMaxListeners(0);
-            this.channelWrapper.consume(this.queueName, (message: any) => {
+            await this.channelWrapper.consume(this.queueName, (message: any) => {
                 this.eventEmitter.emit(message.properties.correlationId.toString(), message);
                 this.channelWrapper.ack(message);
             }, {
